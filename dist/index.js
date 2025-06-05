@@ -10,14 +10,16 @@ const member_routes_1 = __importDefault(require("./routes/member.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+app.get('/', (req, res) => {
+    res.send('Welcome to the Member Management API. Visit /members');
+});
 app.use('/members', member_routes_1.default);
 async function start() {
     try {
-        console.log("Starting app...");
         await db_1.default.sync();
         console.log('Database synced');
         app.listen(3000, () => {
-            console.log('Server is running on port 3000');
+            console.log('Server is running http://localhost:3000');
         });
     }
     catch (err) {
