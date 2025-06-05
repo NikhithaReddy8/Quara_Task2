@@ -61,7 +61,7 @@ DB_HOST=localhost
 DB_PORT=5432
 ```
 
-## Running the Project
+## Running locally
 
 To build and start the server:
 
@@ -69,3 +69,9 @@ To build and start the server:
 npx tsc     # Compile TypeScript to JavaScript
 node dist/index.js
 ```
+The server will be running on:
+
+```bash
+http://localhost:3000
+```
+You can now access the API endpoints (e.g., /members) at this address.
