@@ -1,10 +1,27 @@
 import Member from '../models/member.model';
+import Role from '../models/role.model';
+import MemberRole from '../models/memberRole.model';
 
-export const getAllMembers = () => Member.findAll();
-export const getMemberById = (id: string) => Member.findByPk(id);
-export const createMember = (name: string, email: string) => Member.create({ name, email });
-export const updateMember = async (id: string, name: string, email: string) => {
-  const [updated] = await Member.update({ name, email }, { where: { id } });
-  return updated ? await Member.findByPk(id) : null;
+export const createMember = async (name: string, email: string) => {
+  return await Member.create({ name, email });
 };
-export const deleteMember = (id: string) => Member.destroy({ where: { id } });
+
+export const getAllMembers = async () => {
+  return await Member.findAll();
+};
+
+export const getMemberById = async (id: string) => {
+  return await Member.findByPk(id);
+};
+
+export const updateMember = async (id: string, name: string, email: string) => {
+  const member = await Member.findByPk(id);
+  if (!member) return null;
+
+  await member.update({ name, email });
+  return member;
+};
+
+export const deleteMember = async (id: string) => {
+  return await Member.destroy({ where: { id } });
+};

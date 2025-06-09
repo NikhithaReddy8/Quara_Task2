@@ -1,102 +1,81 @@
 import { Request, Response } from 'express';
-import Joi from 'joi';
+import { memberSchema } from '../validations/member.schema';
+import { uuidSchema } from '../validations/uuid.schema';
 import * as memberService from '../services/member.service';
+import MemberRole from '../models/memberRole.model';
 
-const memberSchema = Joi.object({
-  name: Joi.string().min(3).required().messages({
-    'string.base': `"name" should be a type of 'text'`,
-    'string.empty': `"name" cannot be an empty field`,
-    'string.min': `"name" should have a minimum length of {#limit}`,
-    'any.required': `"name" is a required field`
-  }),
-  email: Joi.string().email().required().messages({
-    'string.email': `"email" must be a valid email`,
-    'any.required': `"email" is a required field`
-  }),
-});
+export const create = async (req: Request, res: Response) => {
+  const { error } = memberSchema.validate(req.body, { abortEarly: false });
+  if (error) return res.status(400).json({ errors: error.details.map(d => d.message) });
 
-const uuidSchema = Joi.string().guid({ version: 'uuidv4' }).required().messages({
-  'string.guid': `"id" must be a valid UUIDv4`,
-  'any.required': `"id" is required`
-});
+  try {
+    const { name, email, roleId } = req.body;
+    const newMember = await memberService.createMember(name, email);
+    if (roleId) {
+      await MemberRole.create({ memberId: newMember.id, roleId });
+    }
+    res.status(201).json(await memberService.getMemberById(newMember.id));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
-export const getMembers = async (req: Request, res: Response) => {
+export const getAll = async (_req: Request, res: Response) => {
   try {
     const members = await memberService.getAllMembers();
     res.json(members);
   } catch (err: any) {
-    res.status(500).send(err.message);
+    res.status(500).json({ error: err.message });
   }
 };
 
-export const getMember = async (req: Request, res: Response) => {
-  const { error } = uuidSchema.validate(req.params.id, { abortEarly: false });
-  if (error) {
-    const errors = error.details.map(detail => detail.message);
-    return res.status(400).json({ errors });
-  }
+export const getById = async (req: Request, res: Response) => {
+  const { error } = uuidSchema.validate(req.params.id);
+  if (error) return res.status(400).json({ errors: error.details.map(d => d.message) });
 
   try {
     const member = await memberService.getMemberById(req.params.id);
-    if (member) return res.json(member);
-    return res.status(404).send('Member not found');
-  } catch (err: any) {
-    res.status(500).send(err.message);
-  }
-};
-
-export const create = async (req: Request, res: Response) => {
-  const { error } = memberSchema.validate(req.body, { abortEarly: false });
-  if (error) {
-    const errors = error.details.map(detail => detail.message);
-    return res.status(400).json({ errors });
-  }
-
-  try {
-    const { name, email } = req.body;
-    const newMember = await memberService.createMember(name, email);
-    res.status(201).json(newMember);
+    if (!member) return res.status(404).send('Member not found');
+    res.json(member);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 };
 
 export const update = async (req: Request, res: Response) => {
-  const { error: idError } = uuidSchema.validate(req.params.id, { abortEarly: false });
-  if (idError) {
-    const errors = idError.details.map(detail => detail.message);
-    return res.status(400).json({ errors });
-  }
+  const { error: idError } = uuidSchema.validate(req.params.id);
+  if (idError) return res.status(400).json({ errors: idError.details.map(d => d.message) });
 
   const { error: bodyError } = memberSchema.validate(req.body, { abortEarly: false });
-  if (bodyError) {
-    const errors = bodyError.details.map(detail => detail.message);
-    return res.status(400).json({ errors });
-  }
+  if (bodyError) return res.status(400).json({ errors: bodyError.details.map(d => d.message) });
 
   try {
-    const { name, email } = req.body;
+    const { name, email, roleId } = req.body;
     const updated = await memberService.updateMember(req.params.id, name, email);
-    if (updated) return res.json(updated);
-    return res.status(404).send('Member not found');
+    if (!updated) return res.status(404).send('Member not found');
+
+    if (roleId) {
+      await MemberRole.destroy({ where: { memberId: req.params.id } });
+      await MemberRole.create({ memberId: req.params.id, roleId });
+    }
+
+    const updatedMember = await memberService.getMemberById(req.params.id);
+    res.json(updatedMember);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 };
 
 export const remove = async (req: Request, res: Response) => {
-  const { error } = uuidSchema.validate(req.params.id, { abortEarly: false });
-  if (error) {
-    const errors = error.details.map(detail => detail.message);
-    return res.status(400).json({ errors });
-  }
+  const { error } = uuidSchema.validate(req.params.id);
+  if (error) return res.status(400).json({ errors: error.details.map(d => d.message) });
 
   try {
+    await MemberRole.destroy({ where: { memberId: req.params.id } });
     const deleted = await memberService.deleteMember(req.params.id);
-    if (deleted) return res.send(`Member with id ${req.params.id} deleted`);
-    return res.status(404).send('Member not found');
+    if (!deleted) return res.status(404).send('Member not found');
+    res.send(`Member with id ${req.params.id} deleted`);
   } catch (err: any) {
-    res.status(500).send(err.message);
+    res.status(500).json({ error: err.message });
   }
 };
-

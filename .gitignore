@@ -1,4 +1,36 @@
+# ========================
+# Node.js Dependencies
+# ========================
 node_modules/
+
+# ========================
+# Environment Variables
+# ========================
 .env
+
+# ========================
+# Operating System & Editor Settings
+# ========================
 .DS_Store
+.vscode/
+.idea/
+
+# ========================
+# Logs
+# ========================
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# TypeScript Build Outputs
+# ========================
+dist/
+build/
+*.tsbuildinfo
+
+# ========================
+# Test Coverage
+# ========================
+coverage/
